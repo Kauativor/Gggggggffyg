@@ -1,0 +1,872 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+-- Criar ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "silvaALL"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Criar  frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 30)
+mainFrame.Position = UDim2.new(0, 30, 0, 120)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local function createCorner(parent)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = parent
+endloadstring(game:HttpGet("https://raw.githubusercontent.com/PyYakro/youknowtherules/refs/heads/main/TrainForUGC.lua"))()
+createCorner(mainFrame)
+
+-- Barra de título
+local titleBar = Instance.new("Frame", mainFrame)
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+titleBar.BorderSizePixel = 0
+createCorner(titleBar)
+
+local titleLabel = Instance.new("TextLabel", titleBar)
+titleLabel.Size = UDim2.new(1, -40, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.Text = "silvaALL"
+titleLabel.TextColor3 = Color3.new(0, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 16
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+
+-- Rainbow título animado
+RunService.RenderStepped:Connect(function()
+    local hue = tick() % 5 / 5
+    local color = Color3.fromHSV(hue, 1, 1)
+    titleBar.BackgroundColor3 = color
+    titleLabel.TextColor3 = Color3.new(0, 0, 0)
+end)
+
+-- Botão de toggle da GUI
+local toggleButton = Instance.new("TextButton", titleBar)
+toggleButton.Size = UDim2.new(0, 30, 1, 0)
+toggleButton.Position = UDim2.new(1, -30, 0, 0)
+toggleButton.Text = "+"
+toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextSize = 20
+toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+createCorner(toggleButton)
+
+-- Frame para abas (scroll horizontal)
+local tabButtonsFrame = Instance.new("ScrollingFrame", mainFrame)
+tabButtonsFrame.Size = UDim2.new(1, 0, 0, 25)
+tabButtonsFrame.Position = UDim2.new(0, 0, 0, 30)
+tabButtonsFrame.BackgroundTransparency = 1
+tabButtonsFrame.Visible = false
+tabButtonsFrame.ScrollBarThickness = 4
+tabButtonsFrame.ScrollingDirection = Enum.ScrollingDirection.X
+tabButtonsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+tabButtonsFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+local tabLayout = Instance.new("UIListLayout", tabButtonsFrame)
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tabLayout.Padding = UDim.new(0, 5)
+
+-- Conteúdo das abas
+local contentHolder = Instance.new("Frame", mainFrame)
+contentHolder.Position = UDim2.new(0, 0, 0, 55)
+contentHolder.Size = UDim2.new(1, 0, 1, -55)
+contentHolder.BackgroundTransparency = 1
+contentHolder.Visible = false
+
+local tabs, contentFrames = {}, {}
+
+-- Função para atualizar o CanvasSize X do tabButtonsFrame
+local function updateTabCanvasSize()
+    task.wait() -- Allow UI to render and calculate AbsoluteSize
+
+    local totalWidth = 0    
+    for _, tabButton in pairs(tabs) do    
+        totalWidth = totalWidth + tabButton.AbsoluteSize.X + tabLayout.Padding.Offset    
+    end    
+    totalWidth = totalWidth + tabLayout.Padding.Offset     
+
+    tabButtonsFrame.CanvasSize = UDim2.new(0, math.max(tabButtonsFrame.AbsoluteSize.X, totalWidth), 0, 0)
+
+end
+
+local function createTab(name)
+    local tabButton = Instance.new("TextButton", tabButtonsFrame)
+    tabButton.Size = UDim2.new(0, 80, 1, 0)
+    tabButton.Text = name
+    tabButton.Font = Enum.Font.SourceSansBold
+    tabButton.TextSize = 14
+    tabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    tabButton.TextColor3 = Color3.new(1, 1, 1)
+    tabButton.BackgroundTransparency = 0
+    createCorner(tabButton)
+
+    local frame = Instance.new("ScrollingFrame", contentHolder)      
+    frame.Size = UDim2.new(1, -10, 1, -10)      
+    frame.Position = UDim2.new(0, 5, 0, 5)      
+    frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)      
+    frame.BorderSizePixel = 0      
+    frame.ScrollBarThickness = 4      
+    frame.Visible = false      
+    createCorner(frame)      
+
+    local layout = Instance.new("UIListLayout", frame)      
+    layout.SortOrder = Enum.SortOrder.LayoutOrder      
+    layout.Padding = UDim.new(0, 4)      
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()      
+        frame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)      
+    end)      
+
+    tabButton.MouseButton1Click:Connect(function()      
+        for _, f in pairs(contentFrames) do f.Visible = false end      
+        for _, b in pairs(tabs) do b.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end      
+        frame.Visible = true      
+        tabButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)      
+    end)      
+
+    table.insert(tabs, tabButton)      
+    table.insert(contentFrames, frame)      
+        
+    return frame
+
+end
+
+local function playClickSound()
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://15666462"
+    sound.Volume = 2
+    sound.PlayOnRemove = true
+    sound.Parent = screenGui
+    sound:Destroy()
+end
+
+local function createToggleButton(parent, textOn, textOff, callback)
+    local button = Instance.new("TextButton", parent)
+    button.Size = UDim2.new(1, -10, 0, 35)
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Font = Enum.Font.SourceSansBold
+    button.TextSize = 14
+    button.BorderSizePixel = 0
+    createCorner(button)
+
+    local statusDot = Instance.new("Frame", button)      
+    statusDot.Size = UDim2.new(0, 10, 0, 10)      
+    statusDot.Position = UDim2.new(1, -20, 0.5, -5)      
+    statusDot.BackgroundColor3 = Color3.fromRGB(255, 0, 0)      
+    statusDot.BorderSizePixel = 0      
+    createCorner(statusDot)      
+
+    local enabled = false      
+    button.Text = textOn      
+
+    button.MouseButton1Click:Connect(function()      
+        enabled = not enabled      
+        button.Text = enabled and textOff or textOn      
+        statusDot.BackgroundColor3 = enabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)      
+        playClickSound()      
+        callback(enabled)      
+    end)      
+
+    button.MouseEnter:Connect(function()      
+        button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)      
+    end)      
+    button.MouseLeave:Connect(function()      
+        button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)      
+    end)      
+
+    return button
+
+end
+
+local function createButton(parent, text, callback)
+    local button = Instance.new("TextButton", parent)
+    button.Size = UDim2.new(1, -10, 0, 35)
+    button.Text = text
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Font = Enum.Font.SourceSansBold
+    button.TextSize = 14
+    button.BorderSizePixel = 0
+    createCorner(button)
+
+    button.MouseButton1Click:Connect(function()      
+        playClickSound()      
+        callback()      
+    end)      
+
+    button.MouseEnter:Connect(function()      
+        button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)      
+    end)      
+    button.MouseLeave:Connect(function()      
+        button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)      
+    end)      
+
+    return button
+
+end
+
+-- Cria abas (a ordem aqui define a ordem visual e de arrasto)
+local tabUtilidades = createTab("main")
+local tabTeleporte = createTab("Tp pleyers")
+local tabFuncoes = createTab("Scripts")
+local tabMisc = createTab("misc")
+local tabAdicionais = createTab("Adicionais")
+
+local killAuraConnection = nil
+createToggleButton(tabAdicionais, "Ativar Kill Aura ", "Desativar Kill Aura", function(enabled)
+    local character = getCharacter()
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    if enabled then
+        killAuraConnection = RunService.Heartbeat:Connect(function()
+            local range = 15
+            local damage = 10
+
+            for _, targetPlayer in pairs(Players:GetPlayers()) do
+                if targetPlayer ~= player and targetPlayer.Character and targetPlayer.Character:FindFirstChildOfClass("Humanoid") and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local targetHumanoid = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    local myHRP = character:FindFirstChild("HumanoidRootPart")
+
+                    if targetHumanoid and targetHRP and myHRP then
+                        local distance = (myHRP.Position - targetHRP.Position).Magnitude
+                        if distance <= range then
+                            targetHumanoid:TakeDamage(damage)
+                        end
+                    end
+                end
+            end
+        end)
+        showNotification("Kill Aura ativado!")
+    else
+        if killAuraConnection then
+            killAuraConnection:Disconnect()
+            killAuraConnection = nil
+        end
+        showNotification("Kill Aura desativado!")
+    end
+end)
+
+local cameraESPConnection = nil
+local originalCameraSubject = nil
+local selectedPlayerForCameraESP = nil
+
+local cameraESPDropdownFrame = Instance.new("Frame", tabAdicionais)
+cameraESPDropdownFrame.Size = UDim2.new(1, -10, 0, 35)
+cameraESPDropdownFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+cameraESPDropdownFrame.BorderSizePixel = 0
+createCorner(cameraESPDropdownFrame)
+
+local cameraESPDropdownButton = Instance.new("TextButton", cameraESPDropdownFrame)
+cameraESPDropdownButton.Size = UDim2.new(1, 0, 1, 0)
+cameraESPDropdownButton.Text = "Selecionar Jogador ▼"
+cameraESPDropdownButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+cameraESPDropdownButton.TextColor3 = Color3.new(1, 1, 1)
+cameraESPDropdownButton.Font = Enum.Font.SourceSansBold
+cameraESPDropdownButton.TextSize = 14
+cameraESPDropdownButton.BorderSizePixel = 0
+cameraESPDropdownButton.BackgroundTransparency = 0
+createCorner(cameraESPDropdownButton)
+
+local cameraESPPlayerListScrollingFrame = Instance.new("ScrollingFrame", tabAdicionais)
+cameraESPPlayerListScrollingFrame.Size = UDim2.new(1, -10, 0, 150)
+cameraESPPlayerListScrollingFrame.Position = UDim2.new(0, 5, 0, 40)
+cameraESPPlayerListScrollingFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+cameraESPPlayerListScrollingFrame.BorderSizePixel = 0
+cameraESPPlayerListScrollingFrame.ScrollBarThickness = 4
+cameraESPPlayerListScrollingFrame.Visible = false
+createCorner(cameraESPPlayerListScrollingFrame)
+
+local cameraESPPlayerListLayout = Instance.new("UIListLayout", cameraESPPlayerListScrollingFrame)
+cameraESPPlayerListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+cameraESPPlayerListLayout.Padding = UDim.new(0, 4)
+cameraESPPlayerListLayout.FillDirection = Enum.FillDirection.Vertical
+cameraESPPlayerListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+cameraESPPlayerListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    cameraESPPlayerListScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, cameraESPPlayerListLayout.AbsoluteContentSize.Y + 10)
+end)
+
+local cameraESPDropdownExpanded = false
+cameraESPDropdownButton.MouseButton1Click:Connect(function()
+    cameraESPDropdownExpanded = not cameraESPDropdownExpanded
+    cameraESPPlayerListScrollingFrame.Visible = cameraESPDropdownExpanded
+    if cameraESPDropdownExpanded then
+        cameraESPDropdownButton.Text = "Selecionar Jogador ▲"
+        updateCameraESPPlayerList()
+    else
+        cameraESPDropdownButton.Text = "Selecionar Jogador ▼"
+    end
+    playClickSound()
+end)
+
+local cameraESPToggleButton = createToggleButton(tabAdicionais, "Ativar Visão Remota ", "Desativar Visão Remota", function(enabled)
+    local camera = workspace.CurrentCamera
+    if enabled then
+        if selectedPlayerForCameraESP and selectedPlayerForCameraESP.Character then
+            originalCameraSubject = camera.CameraSubject
+            camera.CameraSubject = selectedPlayerForCameraESP.Character.Humanoid
+            camera.CameraType = Enum.CameraType.Attach
+            showNotification("Visão remota ativada para " .. selectedPlayerForCameraESP.Name .. "!")
+        else
+            showNotification("Nenhum jogador selecionado para visão remota ou jogador inválido.")
+            return false
+        end
+    else
+        if cameraESPConnection then
+            cameraESPConnection:Disconnect()
+            cameraESPConnection = nil
+        end
+        if originalCameraSubject then
+            camera.CameraSubject = originalCameraSubject
+            camera.CameraType = Enum.CameraType.Custom
+            originalCameraSubject = nil
+        end
+        showNotification("Visão remota desativada.")
+    end
+    return true
+end)
+
+
+local function updateCameraESPPlayerList()
+    for _, child in pairs(cameraESPPlayerListScrollingFrame:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if otherPlayer ~= player then
+            local pButton = Instance.new("TextButton", cameraESPPlayerListScrollingFrame)
+            pButton.Size = UDim2.new(1, 0, 0, 30)
+            pButton.Text = otherPlayer.Name
+            pButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            pButton.TextColor3 = Color3.new(1, 1, 1)
+            pButton.Font = Enum.Font.SourceSans
+            pButton.TextSize = 14
+            pButton.BorderSizePixel = 0
+            createCorner(pButton)
+
+            pButton.MouseButton1Click:Connect(function()
+                selectedPlayerForCameraESP = otherPlayer
+                cameraESPDropdownButton.Text = "Visão: " .. otherPlayer.Name .. " ▼"
+                cameraESPDropdownExpanded = false
+                cameraESPPlayerListScrollingFrame.Visible = false
+                playClickSound()
+
+                if cameraESPToggleButton.Text == "Desativar Visão Remota" then
+                    local camera = workspace.CurrentCamera
+                    if selectedPlayerForCameraESP and selectedPlayerForCameraESP.Character then
+                        camera.CameraSubject = selectedPlayerForCameraESP.Character.Humanoid
+                    end
+                end
+            end)
+
+            pButton.MouseEnter:Connect(function()
+                pButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+            end)
+            pButton.MouseLeave:Connect(function()
+                pButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            end)
+        end
+    end
+end
+
+Players.PlayerAdded:Connect(updateCameraESPPlayerList)
+Players.PlayerRemoving:Connect(updateCameraESPPlayerList)
+updateCameraESPPlayerList()
+
+local originalCloseGuiButtonCallback = nil
+for _, child in pairs(tabMisc:GetChildren()) do
+    if child:IsA("TextButton") and child.Text == "Fechar GUI " then
+        originalCloseGuiButtonCallback = child.MouseButton1Click
+        child.MouseButton1Click:Disconnect()
+        child.MouseButton1Click:Connect(function()
+            if cameraESPToggleButton.Text == "Desativar Visão Remota" then
+                cameraESPToggleButton.MouseButton1Click:Fire()
+            end
+            screenGui:Destroy()
+            if _G.InfiniteJump then _G.InfiniteJump:Disconnect() end
+            if _G.Noclip then _G.Noclip:Disconnect() end
+            if _G.ESPConnection then _G.ESPConnection:Disconnect() end
+            if timerConnection then timerConnection:Disconnect() end
+            if killAuraConnection then killAuraConnection:Disconnect() end
+        end)
+        break
+    end
+end
+
+-- CHAMAR updateTabCanvasSize APÓS A CRIAÇÃO DE TODAS AS ABAS
+updateTabCanvasSize()
+
+-- Utilidades
+createToggleButton(tabUtilidades, "Ativar infinite jump ", "Desativar Pulo Infinito", function(enabled)
+    if enabled then
+        _G.InfiniteJump = UserInputService.JumpRequest:Connect(function()
+            local char = getCharacter()
+            local hum = char:FindFirstChildWhichIsA("Humanoid")
+            if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+        end)
+    elseif _G.InfiniteJump then
+        _G.InfiniteJump:Disconnect()
+    end
+end)
+
+createToggleButton(tabUtilidades, "Ativar Speed", "Desativar Speed", function(enabled)
+    local hum = getCharacter():FindFirstChildWhichIsA("Humanoid")
+    if hum then
+        hum.WalkSpeed = enabled and 100 or 16
+    end
+end)
+
+createToggleButton(tabUtilidades, "Ativar Noclip", "Desativar Noclip", function(enabled)
+    if enabled then
+        _G.Noclip = RunService.Stepped:Connect(function()
+            local char = getCharacter()
+            for _, p in ipairs(char:GetDescendants()) do
+                if p:IsA("BasePart") then p.CanCollide = false end
+            end
+        end)
+    elseif _G.Noclip then
+        _G.Noclip:Disconnect()
+    end
+end)
+
+createToggleButton(tabUtilidades, "Ativar ESP", "Desativar ESP", function(enabled)
+    if enabled then
+        _G.ESPConnection = RunService.RenderStepped:Connect(function()
+            for _, v in pairs(Players:GetPlayers()) do
+                if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                    local line = Instance.new("Beam")
+                    local a0 = Instance.new("Attachment", getCharacter().HumanoidRootPart)
+                    local a1 = Instance.new("Attachment", v.Character.HumanoidRootPart)
+                    line.Attachment0 = a0
+                    line.Attachment1 = a1
+                    local hue = tick() % 5 / 5
+                    line.Color = ColorSequence.new{
+                        ColorSequenceKeypoint.new(0, Color3.fromHSV(hue, 1, 1)),
+                        ColorSequenceKeypoint.new(1, Color3.fromHSV((hue + 0.1) % 1, 1, 1))
+                    }
+                    line.Width0 = 0.1
+                    line.Width1 = 0.1
+                    line.FaceCamera = true
+                    line.Parent = workspace
+                    game:GetService("Debris"):AddItem(line, 0.05)
+                end
+            end
+        end)
+    elseif _G.ESPConnection then
+        _G.ESPConnection:Disconnect()
+    end
+end)
+
+createButton(tabUtilidades, "Ativar Anti-AFK", function()
+    for _, conn in pairs(getconnections(player.Idled)) do
+        conn:Disable()
+    end
+    player.Idled:Connect(function()
+        local VIM = game:GetService("VirtualInputManager")
+        VIM:SendKeyEvent(true, "W", false, game)
+        task.wait(0.1)
+        VIM:SendKeyEvent(false, "W", false, game)
+    end)
+end)
+
+createButton(tabUtilidades, "fly Gui ", function()
+    loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Gui-Fly-v3-37111"))()
+end)
+
+local Lighting = game:GetService("Lighting")
+
+local originalClockTime = nil
+local connection = nil -- To hold the RenderStepped connection
+
+createToggleButton(tabUtilidades, "Ativar Dia ", "Desativar Dia ", function(enabled)
+    if enabled then
+        originalClockTime = Lighting.ClockTime -- Store current time before overriding
+        Lighting.ClockTime = 14
+        -- Continuously set ClockTime to 14 to fight against other scripts/cycles
+        connection = game:GetService("RunService").RenderStepped:Connect(function()
+            Lighting.ClockTime = 14
+        end)
+        showNotification("Céu definido para o dia! ")
+    else
+        if connection then
+            connection:Disconnect() -- Stop forcing the time
+            connection = nil
+        end
+
+        if originalClockTime ~= nil then
+            Lighting.ClockTime = originalClockTime
+            showNotification("Céu restaurado para o tempo anterior. ")
+        else
+            Lighting.ClockTime = 6
+            showNotification("Céu desativado. Tempo original não encontrado, definido para amanhecer. ")
+        end
+    end
+end)
+
+createToggleButton(tabUtilidades, "Ativar Don't Sit Down ", "Desativar Don't Sit Down", function(enabled)
+    local character = getCharacter()
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    if enabled then
+        -- Remover ou desabilitar assentos UMA VEZ só
+        for _, seat in ipairs(workspace:GetDescendants()) do
+            if seat:IsA("Seat") or seat:IsA("VehicleSeat") then
+                seat.Disabled = true
+                -- seat:Destroy() -- Se quiser destruir em vez de só desativar, mas cuidado!
+            end
+        end
+
+        -- Loop apenas para manter o jogador de pé
+        _G.NoSitConnection = RunService.Stepped:Connect(function()
+            if humanoid.Sit then
+                humanoid.Sit = false
+                humanoid:ChangeState(Enum.HumanoidStateType.Running)
+            end
+        end)
+
+        showNotification("Don't Sit Down ativado!")
+    else
+        if _G.NoSitConnection then
+            _G.NoSitConnection:Disconnect()
+            _G.NoSitConnection = nil
+        end
+        showNotification("Don't Sit Down desativado!")
+    end
+end)
+
+-- Scripts (funções)
+createButton(tabFuncoes, "ugc steal points", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Lion-MaskTV/UGC-Steal-Points/refs/heads/main/KillAura/Library.lua"))()
+end)
+
+createButton(tabFuncoes, "train for ugc", function()
+    
+end)
+
+createButton(tabFuncoes, "c00lguiv1", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/cfsmi2/c00lguiv1/refs/heads/main/Main.lua", true))()
+end)
+
+createButton(tabFuncoes, "coquette", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Daivd977/Deivd999/refs/heads/main/pessal"))()
+end)
+
+createButton(tabFuncoes, "All Emotes", function()
+    loadstring(game:HttpGet("https://rawscripts.net/raw/Brookhaven-RP-all-emotes-6849"))()
+end)
+
+createButton(tabFuncoes, "Steal brainrot ", function()
+    loadstring(game:HttpGet("https://pastefy.app/eCzs7DNQ/raw"))()
+end)
+
+createButton(tabFuncoes, "Redz Hub", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Scripts/refs/heads/main/main.luau"))()
+end)
+
+-- Teleporte players
+local function teleportToPlayer(target)
+    local myChar, targetChar = getCharacter(), target.Character
+    if myChar and targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+        myChar:MoveTo(targetChar.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
+    end
+end
+
+-- Player List Dropdown for Teleport Tab
+local playerDropdownFrame = Instance.new("Frame", tabTeleporte)
+playerDropdownFrame.Size = UDim2.new(1, -10, 0, 35) -- Same size as a button
+playerDropdownFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+playerDropdownFrame.BorderSizePixel = 0
+createCorner(playerDropdownFrame)
+
+local playerDropdownButton = Instance.new("TextButton", playerDropdownFrame)
+playerDropdownButton.Size = UDim2.new(1, 0, 1, 0)
+playerDropdownButton.Text = "Players ▼"
+playerDropdownButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+playerDropdownButton.TextColor3 = Color3.new(1, 1, 1)
+playerDropdownButton.Font = Enum.Font.SourceSansBold
+playerDropdownButton.TextSize = 14
+playerDropdownButton.BorderSizePixel = 0
+playerDropdownButton.BackgroundTransparency = 0 -- Ensure visible
+createCorner(playerDropdownButton)
+
+local playerListScrollingFrame = Instance.new("ScrollingFrame", tabTeleporte)
+playerListScrollingFrame.Size = UDim2.new(1, -10, 0, 150) -- Adjust height as needed
+playerListScrollingFrame.Position = UDim2.new(0, 5, 0, 40) -- Position below the dropdown button
+playerListScrollingFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+playerListScrollingFrame.BorderSizePixel = 0
+playerListScrollingFrame.ScrollBarThickness = 4
+playerListScrollingFrame.Visible = false -- Start hidden
+createCorner(playerListScrollingFrame)
+
+local playerListLayout = Instance.new("UIListLayout", playerListScrollingFrame)
+playerListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+playerListLayout.Padding = UDim.new(0, 4)
+playerListLayout.FillDirection = Enum.FillDirection.Vertical
+playerListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+playerListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    playerListScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, playerListLayout.AbsoluteContentSize.Y + 10)
+end)
+
+local dropdownExpanded = false
+playerDropdownButton.MouseButton1Click:Connect(function()
+    dropdownExpanded = not dropdownExpanded
+    playerListScrollingFrame.Visible = dropdownExpanded
+    if dropdownExpanded then
+        playerDropdownButton.Text = "Players ▲"
+    else
+        playerDropdownButton.Text = "Players ▼"
+    end
+    playClickSound()
+end)
+
+local function updatePlayerList()
+    -- Clear existing player buttons
+    for _, child in pairs(playerListScrollingFrame:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+
+    -- Create new player buttons  
+    for _, other in ipairs(Players:GetPlayers()) do  
+        if other ~= player then  
+            local pButton = Instance.new("TextButton", playerListScrollingFrame)  
+            pButton.Size = UDim2.new(1, 0, 0, 30) -- Full width of scrolling frame, fixed height  
+            pButton.Text = other.Name  
+            pButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)  
+            pButton.TextColor3 = Color3.new(1, 1, 1)  
+            pButton.Font = Enum.Font.SourceSans  
+            pButton.TextSize = 14  
+            pButton.BorderSizePixel = 0  
+            createCorner(pButton)  
+
+            pButton.MouseButton1Click:Connect(function()  
+                teleportToPlayer(other)  
+                playClickSound()  
+                -- Optionally hide the dropdown after selection  
+                dropdownExpanded = false  
+                playerListScrollingFrame.Visible = false  
+                playerDropdownButton.Text = "Players ▼"  
+            end)  
+
+            pButton.MouseEnter:Connect(function()      
+                pButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)      
+            end)      
+            pButton.MouseLeave:Connect(function()      
+                pButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)      
+            end)      
+        end  
+    end  
+    -- Adjust the dropdown frame height to accommodate the expanded player list  
+    if dropdownExpanded then  
+        -- This logic ensures the overall tab content frame (tabTeleporte) resizes correctly  
+        -- The UIListLayout for tabTeleporte (itself a scrolling frame) handles this automatically  
+        -- when children like playerListScrollingFrame change visibility and size.  
+    end
+
+end
+
+-- Connect to PlayerAdded and PlayerRemoving events
+Players.PlayerAdded:Connect(updatePlayerList)
+Players.PlayerRemoving:Connect(updatePlayerList)
+-- Initial population of the player list
+updatePlayerList()
+
+-- Aba misc com cronômetro
+local timerButton = Instance.new("TextButton", tabMisc)
+timerButton.Size = UDim2.new(1, -10, 0, 35)
+timerButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+timerButton.TextColor3 = Color3.new(1, 1, 1)
+timerButton.Font = Enum.Font.SourceSansBold
+timerButton.TextSize = 14
+timerButton.BorderSizePixel = 0
+createCorner(timerButton)
+
+local timerStatusDot = Instance.new("Frame", timerButton)
+timerStatusDot.Size = UDim2.new(0, 10, 0, 10)
+timerStatusDot.Position = UDim2.new(1, -20, 0.5, -5)
+timerStatusDot.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red (off)
+timerStatusDot.BorderSizePixel = 0
+createCorner(timerStatusDot)
+
+local timerRunning = false
+local startTime = 0
+local timerConnection = nil
+
+local function formatTime(seconds)
+    local hours = math.floor(seconds / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    local seconds = math.floor(seconds % 60)
+    return string.format("%02d:%02d:%02d", hours, minutes, seconds)
+end
+
+local function updateTimerLabel()
+    if timerRunning then
+        local elapsedTime = tick() - startTime
+        timerButton.Text = "Cronômetro: " .. formatTime(elapsedTime)
+    else
+        timerButton.Text = "Cronômetro: 00:00:00"
+    end
+end
+
+timerButton.MouseButton1Click:Connect(function()
+    timerRunning = not timerRunning
+    if timerRunning then
+        startTime = tick() -- Start the timer
+        timerStatusDot.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Green (on)
+        timerConnection = RunService.RenderStepped:Connect(updateTimerLabel)
+    else
+        if timerConnection then
+            timerConnection:Disconnect()
+            timerConnection = nil
+        end
+        timerStatusDot.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red (off)
+        updateTimerLabel() -- Reset label to 00:00:00
+    end
+    playClickSound()
+end)
+
+-- Initial display for the timer
+updateTimerLabel()
+
+-- Função para mostrar notificação temporária
+local function showNotification(text)
+    local notifFrame = Instance.new("Frame")
+    notifFrame.Size = UDim2.new(0, 250, 0, 40)
+    notifFrame.Position = UDim2.new(1, -260, 0, 10) -- canto superior direito com margem
+    notifFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    notifFrame.BorderSizePixel = 0
+    notifFrame.AnchorPoint = Vector2.new(0, 0)
+    notifFrame.Parent = screenGui
+    createCorner(notifFrame)
+
+    local notifLabel = Instance.new("TextLabel", notifFrame)
+    notifLabel.Size = UDim2.new(1, -20, 1, 0)
+    notifLabel.Position = UDim2.new(0, 10, 0, 0)
+    notifLabel.BackgroundTransparency = 1
+    notifLabel.TextColor3 = Color3.new(1, 1, 1)
+    notifLabel.Font = Enum.Font.SourceSansBold
+    notifLabel.TextSize = 16
+    notifLabel.Text = text
+    notifLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Fade out e destrói após 5 segundos
+    task.delay(5, function()
+        for i = 1, 20 do
+            notifFrame.BackgroundTransparency = i * 0.05
+            notifLabel.TextTransparency = i * 0.05
+            task.wait(0.05)
+        end
+        notifFrame:Destroy()
+    end)
+end
+
+-- Função para mostrar notificação temporária
+local function showNotification(text)
+    local notifFrame = Instance.new("Frame")
+    notifFrame.Size = UDim2.new(0, 250, 0, 40)
+    notifFrame.Position = UDim2.new(1, -260, 0, 10) -- canto superior direito com margem
+    notifFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    notifFrame.BorderSizePixel = 0
+    notifFrame.AnchorPoint = Vector2.new(0, 0)
+    notifFrame.Parent = screenGui
+    createCorner(notifFrame)
+
+    local notifLabel = Instance.new("TextLabel", notifFrame)
+    notifLabel.Size = UDim2.new(1, -20, 1, 0)
+    notifLabel.Position = UDim2.new(0, 10, 0, 0)
+    notifLabel.BackgroundTransparency = 1
+    notifLabel.TextColor3 = Color3.new(1, 1, 1)
+    notifLabel.Font = Enum.Font.SourceSansBold
+    notifLabel.TextSize = 16
+    notifLabel.Text = text
+    notifLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Fade out e destrói após 5 segundos
+    task.delay(5, function()
+        for i = 1, 20 do
+            notifFrame.BackgroundTransparency = i * 0.05
+            notifLabel.TextTransparency = i * 0.05
+            task.wait(0.05)
+        end
+        notifFrame:Destroy()
+    end)
+end
+
+-- Botão Bypass (ant log, ant kick)
+local bypassButton = createToggleButton(tabMisc, "Ativar Bypass ", "Desativar Bypass", function(enabled)
+    if enabled then
+        -- Anti Kick e Anti Log (desativa kicks e logs via evento)
+        _G.BypassConnectionKick = game:GetService("CoreGui").ChildAdded:Connect(function(child)
+            if child.Name == "KickGui" or child.Name == "LogGui" then
+                child:Destroy()
+            end
+        end)
+
+        -- Mostrar notificação
+        showNotification("Bypass ativado com sucesso!")
+
+    else
+        -- Desconectar tudo
+        if _G.BypassConnectionKick then
+            _G.BypassConnectionKick:Disconnect()
+            _G.BypassConnectionKick = nil
+        end
+    end
+end)
+
+-- Botão para fechar a GUI (na aba misc)
+createButton(tabMisc, "Fechar GUI ", function()
+    screenGui:Destroy()
+    -- Disconnect any active connections to prevent memory leaks if necessary
+    if _G.InfiniteJump then _G.InfiniteJump:Disconnect() end
+    if _G.Noclip then _G.Noclip:Disconnect() end
+    if _G.ESPConnection then _G.ESPConnection:Disconnect() end
+    if timerConnection then timerConnection:Disconnect() end
+end)
+
+
+-- Lógica para expandir/recolher a GUI
+local expanded = false -- Começa como false, GUI minimizada
+toggleButton.MouseButton1Click:Connect(function()
+    expanded = not expanded
+    if expanded then
+        mainFrame.Size = UDim2.new(0, 300, 0, 300) -- Exemplo de altura expandida
+        tabButtonsFrame.Visible = true
+        contentHolder.Visible = true
+        toggleButton.Text = "-"
+        if #tabs > 0 then
+            tabs[1].MouseButton1Click:Fire() -- Seleciona a primeira aba por padrão ao expandir
+        end
+        updateTabCanvasSize()
+    else
+        mainFrame.Size = UDim2.new(0, 300, 0, 30)
+        tabButtonsFrame.Visible = false
+        contentHolder.Visible = false
+        toggleButton.Text = "+"
+        -- Ensure player dropdown is hidden when main GUI collapses
+        playerListScrollingFrame.Visible = false
+        dropdownExpanded = false
+        playerDropdownButton.text = "players ▼"
+    end
+end)
